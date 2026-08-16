@@ -30,6 +30,13 @@ class DeepseekHarness < Formula
     # node-pty's install script also downloads x86_64 darwin prebuilds on
     # Apple Silicon; drop them so the prefix only contains native binaries.
     rm_r libexec/"node_modules/node-pty/prebuilds/darwin-x64" if Hardware::CPU.arm?
+    # node-pty's npm prebuilds ship the macOS spawn-helper WITHOUT the
+    # executable bit (upstream packaging bug), so every PTY spawn fails with
+    # "posix_spawnp failed." — the minimal agent preset's persistent shell
+    # is PTY-only and breaks entirely. npm extraction preserves the tarball
+    # mode (0644), so restore +x for the installed darwin arch here.
+    chmod 0755, libexec/"node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper" if Hardware::CPU.arm?
+    chmod 0755, libexec/"node_modules/node-pty/prebuilds/darwin-x64/spawn-helper" if Hardware::CPU.intel?
     node_bin = formula_opt_bin("node")
     (bin/"dsh").write_env_script(
       libexec/"lib/bin.js",
